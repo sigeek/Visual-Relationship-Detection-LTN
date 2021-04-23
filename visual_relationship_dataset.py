@@ -1,6 +1,8 @@
 import logictensornetworks as ltn
 from scipy.spatial import distance
 import tensorflow as tf
+#import tensorflow.compat.v1 as tf         # added to sove the following error:
+#tf.compat.v1.disable_eager_execution()    # AttributeError: module 'tensorflow' has no attribute 'placeholder'
 import numpy as np
 import csv
 import os
@@ -13,8 +15,8 @@ ltn.default_aggregator = "hmean"
 ltn.default_positive_fact_penality = 0.
 ltn.default_clauses_aggregator = "hmean"
 
-data_training_dir = "data/train"
-data_testing_dir = "data/test"
+data_training_dir = "data/sg_dataset/sg_train_images" ### "data/train"
+data_testing_dir = "data/sg_dataset/sg_test_images" ### "data/test"
 ontology_dir = "data/ontology"
 ontology_dir = "data/ontology"
 
@@ -22,6 +24,8 @@ types = np.genfromtxt(os.path.join(ontology_dir, "classes.csv"), dtype="S", deli
 predicates = np.genfromtxt(os.path.join(ontology_dir, "predicates.csv"), dtype="S", delimiter=",")
 selected_types = types[1:]
 selected_predicates = predicates
+predicates = [str(p).split("'")[1].replace("'", "") for p in predicates]
+selected_predicates = [str(p).split("'")[1].replace("'", "") for p in selected_predicates]
 number_of_features = len(types) + 4
 number_of_extra_features = 7
 objects = ltn.Domain(number_of_features, label="a_bounding_box")
@@ -35,6 +39,7 @@ isOfType = {}
 isInRelation = {}
 for t_idx, t in enumerate(selected_types):
     t_p = np.where(selected_types==t)[0][0] + 1
+    t = str(t).split("'")[1].replace("'", "")
     isOfType[t] = ltn.Predicate("is_of_type_" + t.replace(" ", "_"), objects, layers=5, defined=lambda t_p, dom: is_of_type(t_p, dom), type_idx=t_p)
 
 for p in selected_predicates:
@@ -45,6 +50,7 @@ objects_of_type_not = {}
 object_pairs_in_relation = {}
 object_pairs_not_in_relation = {}
 for t in selected_types:
+    t = str(t).split("'")[1].replace("'", "")
     objects_of_type[t] = ltn.Domain(number_of_features, label="objects_of_type_" + t.replace(" ", "_"))
     objects_of_type_not[t] = ltn.Domain(number_of_features, label="objects_of_type_not_" + t.replace(" ", "_"))
 for p in selected_predicates:
@@ -54,6 +60,8 @@ for p in selected_predicates:
                                                  label="object_pairs_not_in_" + p.replace(" ", "_") + "_relation")
 
 # arguments 2 vectors with xmin,ymin,xmax,ymax coordinates (2 bounding boxes at the image)
+
+### define grounding
 def computing_extended_features(bb1, bb2):
 
     # Area of bounding boxes
@@ -121,59 +129,21 @@ def get_data(train_or_test_switch, one_shot_features_flag, max_rows=10000000):
         data_dir = data_testing_dir
     if train_or_test_switch == "train_reduced_70":
         data_dir = "data/"+train_or_test_switch
-
-    data = np.genfromtxt(os.path.join(data_dir, "features.csv"), delimiter=",", max_rows=max_rows)
-
-    assert np.all(data[:, -4] < data[:, -2])
-    assert np.all(data[:, -3] < data[:, -1])
-
-    img_names = np.genfromtxt(os.path.join(data_dir, "features.csv"), delimiter=",", dtype=None, usecols=(0))
-    idx_types_of_data = np.genfromtxt(os.path.join(data_dir, "types.csv"), dtype="i", max_rows=max_rows)
-    types_of_data = types[idx_types_of_data]
+    ### triplets for kb
     triples_s_o_p = np.genfromtxt(os.path.join(data_dir, "predicates.csv"), delimiter=",", dtype="i", max_rows=max_rows)
 
-    if one_shot_features_flag:
-        one_shot_features = np.zeros((data.shape[0], types.shape[0]))
-        one_shot_features[np.arange(len(one_shot_features)), idx_types_of_data] = [1.0]
-        data = np.hstack((data[:, 0, np.newaxis], one_shot_features, data[:, -4:]))
+    ### triples_s_o_p in reality is (s, p, o)
+    #idx_of_cleaned_data = np.where(np.in1d(predicates[triples_s_o_p[:, -2]], selected_predicates_new))
+    
+    #triples_s_o_p = triples_s_o_p[idx_of_cleaned_data]
 
-    data = normalize_data(data_dir, data)
+    print("End of loading data")
 
-    idx_of_cleaned_data = np.where(np.in1d(predicates[triples_s_o_p[:, -1]], selected_predicates))
-    triples_s_o_p = triples_s_o_p[idx_of_cleaned_data]
-    pairs_of_data = np.array([np.concatenate((data[s_o_p[0]][1:], data[s_o_p[1]][1:],
-                                              computing_extended_features(data[s_o_p[0]], data[s_o_p[1]])))
-                              for s_o_p in triples_s_o_p])
-
-    set_sub_obj = set([tuple(sub_obj) for sub_obj in triples_s_o_p[:, :2]])
-    unique_sub_obj = np.array([sub_obj for sub_obj in set_sub_obj])
-
-    # Grouping bbs that belong to the same picture
-    pics = {}
-    pics_triples = {}
-    for i in range(len(img_names)):
-        triple_idxs = np.where(triples_s_o_p[:, 0] == i)[0]
-        if img_names[i] in pics:
-            pics[img_names[i]].append(i)
-        else:
-            pics[img_names[i]] = [i]
-
-        if img_names[i] in pics_triples:
-            pics_triples[img_names[i]] = np.vstack((pics_triples[img_names[i]], triples_s_o_p[triple_idxs]))
-        else:
-            pics_triples[img_names[i]] = triples_s_o_p[triple_idxs]
-
-    cartesian_of_data = np.array(
-        [np.concatenate((data[i][1:], data[j][1:], computing_extended_features(data[i], data[j]))) for p in
-         pics for i in pics[p] for j in pics[p]])
-
-    cartesian_of_bb_idxs = np.array([[i,j] for p in pics for i in pics[p] for j in pics[p]])
-
-    print "End of loading data"
-
-    return data, pairs_of_data, types_of_data, triples_s_o_p, cartesian_of_data, pics_triples, cartesian_of_bb_idxs
+    #return data, pairs_of_data, types_of_data, triples_s_o_p, cartesian_of_data, pics_triples, cartesian_of_bb_idxs
+    return triples_s_o_p
 
 
+### vrd ontology
 def get_vrd_ontology():
     is_subrelation_of = {}
     has_subrelations = {}
@@ -199,6 +169,8 @@ def get_vrd_ontology():
             is_subrelation_of[row[0]] = []
             inv_relations_of[row[0]] = []
             not_relations_of[row[0]] = []
+
+            ### relationshipp types in vrd_predicate_ontology.csv
 
             for super_relation in row[1:]:
                 if super_relation.split()[0] == 'inv':
