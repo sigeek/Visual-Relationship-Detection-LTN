@@ -8,7 +8,9 @@
 %   (ECCV 2016), 2016(oral). (* = indicates equal contribution)
 %  
 %   The code and the algorithm are for non-comercial use only.
-
+clc
+clear all
+close all
 %% data loading
 addpath('evaluation');
 load('data/objectListN.mat'); 
@@ -37,21 +39,34 @@ load('data/Wb.mat');
 % we will change "predicate" in rlp_labels_ours use our prediction
 
 load('evaluation/gt.mat');
+
+% rlp_conf_ours 1x1000 cell
 rlp_labels_ours = gt_tuple_label; 
 sub_bboxes_ours = gt_sub_bboxes;
 obj_bboxes_ours = gt_obj_bboxes;
 
-model_label_list = {'KB_wc_10000', 'KB_nc_10000'};
+model_label_list = {'KB_wc_2500', 'KB_nc_2500'};
 
+%%
 for model_label_idx =1 : length(model_label_list)
 
     model_label = model_label_list{model_label_idx};
     fprintf('Computing results for model %s \n', model_label)
     load(['results_LTN/predicate_det_result_',model_label,'.mat']);
+    % prblemi con rlp_confs_ours, dovrebbe essere 1x1000 cell
+    % ora è 1000x70 double
 
-    %% computing Predicate Det. accuracy
+    fprintf('\n');
+    fprintf('#######  Top recall results  ####### \n');
+    recall100R = top_recall_Relationship(100, rlp_confs_ours, rlp_labels_ours, sub_bboxes_ours, obj_bboxes_ours);
+    recall50R = top_recall_Relationship(50, rlp_confs_ours, rlp_labels_ours, sub_bboxes_ours, obj_bboxes_ours);
+    fprintf('Predicate Det. R@100: %0.2f \n', 100*recall100R);
+    fprintf('Predicate Det. R@50: %0.2f \n', 100*recall50R);
+
+    % computing Predicate Det. accuracy lesbica
+    fprintf('#######  Zero-shot results  ####### \n');
     zeroShot100R = zeroShot_top_recall_Relationship(100, rlp_confs_ours, rlp_labels_ours, sub_bboxes_ours, obj_bboxes_ours);
     zeroShot50R = zeroShot_top_recall_Relationship(50, rlp_confs_ours, rlp_labels_ours, sub_bboxes_ours, obj_bboxes_ours);
-
-    fprintf('%0.2f\t%0.2f\n',100*zeroShot100R,100*zeroShot50R);
+    fprintf('zero-shot Predicate Det. R@100: %0.2f \n', 100*zeroShot100R);
+    fprintf('zero-shot Predicate Det. R@50: %0.2f \n', 100*zeroShot50R);
 end

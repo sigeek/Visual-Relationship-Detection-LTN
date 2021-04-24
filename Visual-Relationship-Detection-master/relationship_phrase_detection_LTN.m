@@ -8,7 +8,8 @@
 %   (ECCV 2016), 2016(oral). (* = indicates equal contribution)
 %  
 %   The code and the algorithm are for non-comercial use only.
-
+clc
+clear all
 %% data loading
 addpath('evaluation');
 load('data/objectListN.mat'); 
@@ -34,19 +35,35 @@ load('data/Wb.mat');
 % W and b in Eq. (2) in [1]
 %%
 
-model_label_list = {'KB_wc_10000', 'KB_nc_10000'};
+model_label_list = {'KB_wc_2500', 'KB_nc_2500'};
 
 for model_label_idx =1 : length(model_label_list)
     model_label = model_label_list{model_label_idx};
     fprintf('Computing results for model %s \n', model_label)
     load(['results_LTN/relationship_det_result_',model_label,'.mat']);
+    % PROBLEMI CON rlp_confs_ours
+    
+    fprintf('\n');
+    fprintf('#######  Top recall results  ####### \n');
+    recall100P = top_recall_Phrase(100, rlp_confs_ours, rlp_labels_ours, sub_bboxes_ours, obj_bboxes_ours);
+    recall50P = top_recall_Phrase(50, rlp_confs_ours, rlp_labels_ours, sub_bboxes_ours, obj_bboxes_ours); 
+    fprintf('Phrase Det. R@100: %0.2f \n', 100*recall100P);
+    fprintf('Phrase Det. R@50: %0.2f \n', 100*recall50P);
 
-    %% computing Phrase Det. and Relationship Det. accuracy
+    recall100R = top_recall_Relationship(100, rlp_confs_ours, rlp_labels_ours, sub_bboxes_ours, obj_bboxes_ours);
+    recall50R = top_recall_Relationship(50, rlp_confs_ours, rlp_labels_ours, sub_bboxes_ours, obj_bboxes_ours);
+    fprintf('Relationship Det. R@100: %0.2f \n', 100*recall100R);
+    fprintf('Relationship Det. R@50: %0.2f \n', 100*recall50R);
+
+    fprintf('\n');
+    fprintf('#######  Zero-shot results  ####### \n');
     zeroShot100P = zeroShot_top_recall_Phrase(100, rlp_confs_ours, rlp_labels_ours, sub_bboxes_ours, obj_bboxes_ours);
     zeroShot50P = zeroShot_top_recall_Phrase(50, rlp_confs_ours, rlp_labels_ours, sub_bboxes_ours, obj_bboxes_ours);
+    fprintf('zero-shot Phrase Det. R@100: %0.2f \n', 100*zeroShot100P);
+    fprintf('zero-shot Phrase Det. R@50: %0.2f \n', 100*zeroShot50P);
 
     zeroShot100R = zeroShot_top_recall_Relationship(100, rlp_confs_ours, rlp_labels_ours, sub_bboxes_ours, obj_bboxes_ours);
     zeroShot50R = zeroShot_top_recall_Relationship(50, rlp_confs_ours, rlp_labels_ours, sub_bboxes_ours, obj_bboxes_ours);
-
-    fprintf('%0.2f\t%0.2f\t%0.2f\t%0.2f \n', 100*zeroShot100P,100*zeroShot50P,100*zeroShot100R,100*zeroShot50R);
+    fprintf('zero-shot Relationship Det. R@100: %0.2f \n', 100*zeroShot100R);
+    fprintf('zero-shot Relationship Det. R@50: %0.2f \n', 100*zeroShot50R);
 end
