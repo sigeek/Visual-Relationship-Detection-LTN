@@ -1,5 +1,3 @@
-#refine_predictions.py
-
 from anytree import Node, RenderTree, RenderTree, LevelOrderGroupIter
 import rdflib
 import os
@@ -135,10 +133,7 @@ def refine_equiv(values_of_predicates, selected_predicates, aggregator):
     for idx in range(len(selected_predicates)):
         predicate_dict[selected_predicates[idx].replace(" ", "_")] = idx
 
-    #print(values_of_predicates[0])
-
-    for idx_pred in range(len(values_of_predicates)-1): ###
+    for idx_pred in range(len(values_of_predicates)):
         values_of_predicates[idx_pred] = aggregate_equiv(equiv_set, values_of_predicates[idx_pred], predicate_dict, aggregator)
 
-    #print(values_of_predicates)
     return values_of_predicates
