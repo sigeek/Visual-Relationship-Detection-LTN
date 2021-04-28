@@ -40,7 +40,7 @@ function result_visualization_gt(id, idx, idx_gt, saveFile, ...,
     mask(box_sub_gt(2):box_sub_gt(4),box_sub_gt(1):box_sub_gt(3),:) = 1;
     masks((box_sub_gt(2)+vw):(box_sub_gt(4)-vw),(box_sub_gt(1)+vw):(box_sub_gt(3)-vw),:) = 1; 
     mask = (mask - masks);
-    mask(:,:,1:2) = -10*mask(:,:,2:3);
+    mask(:,:,2:3) = -10*mask(:,:,2:3); 
     im = min(max(im + mask,0),1); 
 
     %object mask
@@ -49,7 +49,7 @@ function result_visualization_gt(id, idx, idx_gt, saveFile, ...,
     mask(box_obj_gt(2):box_obj_gt(4),box_obj_gt(1):box_obj_gt(3),:) = 1;
     masks((box_obj_gt(2)+vw):(box_obj_gt(4)-vw),(box_obj_gt(1)+vw):(box_obj_gt(3)-vw),:) = 1; 
     mask = (mask - masks);
-    mask(:,:,2:3) = -10*mask(:,:,1:2); % red
+    mask(:,:,2:3) = -10*mask(:,:,1:2); 
     im = min(max(im + mask,0),1); 
 
     sub_gt.cx = round((box_sub_gt(2) + box_sub_gt(4))/2);
@@ -68,7 +68,7 @@ function result_visualization_gt(id, idx, idx_gt, saveFile, ...,
     mask(box_sub_pred(2):box_sub_pred(4),box_sub_pred(1):box_sub_pred(3),:) = 1;
     masks((box_sub_pred(2)+vw):(box_sub_pred(4)-vw),(box_sub_pred(1)+vw):(box_sub_pred(3)-vw),:) = 1; 
     mask = (mask - masks);
-    mask(:,:,2:3) = -10*mask(:,:,2:3);
+    mask(:,:,1:2) = -10*mask(:,:,2:3);
     im = min(max(im + mask,0),1); 
 
     %object mask
@@ -93,11 +93,7 @@ function result_visualization_gt(id, idx, idx_gt, saveFile, ...,
     gcf=figure;  imshow(im);hold on
     
     %ground truth
-    %text(sub_gt.cy, sub_gt.cx,str_sub_gt,'color','yellow','fontsize',20);hold on
-    %text(obj_gt.cy, obj_gt.cx,str_obj_gt,'color','cyan','fontsize',20); hold on
-    
-    %predictions
-    text(sub_gt.cy, sub_gt.cx, [str_sub_pred, ' (gt)'] ,'color','blue','fontsize',20);hold on
+    text(sub_gt.cy, sub_gt.cx, [str_sub_pred, ' (gt)'] ,'color','red','fontsize',20);hold on
     text(obj_gt.cy, obj_gt.cx, [str_obj_pred, ' (gt)'] ,'color','red','fontsize',20); hold on
     if size(im,1) > size(im,2)
         strRep = [ '<',str_sub_pred , ', ' ,str_rel_pred ,', ',  str_obj_pred , ...
