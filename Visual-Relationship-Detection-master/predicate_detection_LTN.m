@@ -53,8 +53,15 @@ for model_label_idx =1 : length(model_label_list)
     model_label = model_label_list{model_label_idx};
     fprintf('Computing results for model %s \n', model_label)
     load(['results_LTN/predicate_det_result_',model_label,'.mat']);
-    % prblemi con rlp_confs_ours, dovrebbe essere 1x1000 cell
-    % ora è 1000x70 double
+    
+    for ii = 1 : length(rlp_confs_ours)
+        [Confs, ind] = sort(rlp_confs_ours{ii}, 'descend');
+        rlp_confs_ours{ii} = Confs;
+        rlp_labels_ours{ii} = rlp_labels_ours{ii}(ind,:);
+        sub_bboxes_ours{ii} = sub_bboxes_ours{ii}(ind,:);
+        obj_bboxes_ours{ii} = obj_bboxes_ours{ii}(ind,:);
+    end
+
 
     fprintf('\n');
     fprintf('#######  Top recall results  ####### \n');

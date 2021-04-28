@@ -42,6 +42,13 @@ for model_label_idx =1 : length(model_label_list)
     fprintf('Computing results for model %s \n', model_label)
     load(['results_LTN/relationship_det_result_',model_label,'.mat']);
     % PROBLEMI CON rlp_confs_ours
+    for ii = 1 : length(rlp_confs_ours)
+        [Confs, ind] = sort(rlp_confs_ours{ii}, 'descend');
+        rlp_confs_ours{ii} = Confs;
+        rlp_labels_ours{ii} = rlp_labels_ours{ii}(ind,:);
+        sub_bboxes_ours{ii} = sub_bboxes_ours{ii}(ind,:);
+        obj_bboxes_ours{ii} = obj_bboxes_ours{ii}(ind,:);
+    end
     
     fprintf('\n');
     fprintf('#######  Top recall results  ####### \n');
